@@ -6,32 +6,26 @@
  */
 .arguments
 
-   // User session
-   _session:string
-
    // Mandatory argument describing the Hyperlambda code you want to generate.
    query:string
 
+   // Optional argument being code you want the AI function to change.
+   old_code:string
+
 .type:public
 
-// Creating our unique cache key identifying previous code generated if existing.
-.cache-key
-set-value:x:-
-   strings.concat
-      .:"generated-hyperlambda-"
-      get-value:x:@.arguments/*/_session
-
-// Checking if we've got a previous request
-cache.get:x:@.cache-key
+// Checking if we've got previously generated code
 if
-   not-null:x:@cache.get
+   and
+      exists:x:@.arguments/*/old_code
+      not-null:x:@.arguments/*/old_code
    .lambda
-   
-      // Adding previously generated code as context.
+
+      // Making sure we pass in previous code to LLM.
       unwrap:x:+/*/*
       add:x:../*/execute
          .
-            context:x:@cache.get
+            context:x:@.arguments/*/old_code
 
 /*
  * Invokes OpenAI's chat API with the specified [model], [max_tokens], [context],
@@ -52,13 +46,6 @@ execute:magic.workflows.actions.execute
       temperature:decimal:0.0
       query:x:@.arguments/*/query
       instruction:@"You are a Hyperlambda software development assistant. Your task is to generate and respond with Hyperlambda solving the task you've been asked to solve."
-
-/*
- * Storing answer into session
- */
-cache.set:x:@.cache-key
-   expiration:3600
-   value:x:@execute/*/answer
 
 // Returns the result of your last action.
 return-nodes:x:@execute/*
