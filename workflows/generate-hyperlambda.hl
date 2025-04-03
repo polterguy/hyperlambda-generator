@@ -25,8 +25,11 @@ if
       set-value:x:@.arguments/*/query
          strings.concat
             get-value:x:@.arguments/*/query
-            .:"\n\n---\n\n"
-            get-value:x:@.arguments/*/old_code
+            .:"\n\n"
+            .:"```hyperlambda\r\n"
+            strings.trim:x:@.arguments/*/old_code
+            .:"\r\n```"
+log.info:x:@.arguments/*/query
 
 /*
  * Invokes OpenAI's chat API with the specified [model], [max_tokens], [context],
@@ -42,11 +45,13 @@ execute:magic.workflows.actions.execute
    name:openai-query
    filename:/modules/openai/workflows/actions/openai-query.hl
    arguments
-      model:"ft:gpt-4o-mini-2024-07-18:ainiro:hl:BI9jx5L4"
+      model:"ft:gpt-4o-mini-2024-07-18:ainiro:hl:BIFMLijI"
       max_tokens:int:2500
       temperature:decimal:0.0
       query:x:@.arguments/*/query
       instruction:@"You are a Hyperlambda software development assistant. Your task is to generate and respond with Hyperlambda solving the task you've been asked to solve."
 
 // Returns the result of your last action.
-return-nodes:x:@execute/*
+log.info:x:@execute/*/answer
+yield
+   new_code:x:@execute/*/answer
