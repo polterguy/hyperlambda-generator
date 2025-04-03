@@ -1,0 +1,35 @@
+
+/*
+ * Generate Hyperlambda code
+ * 
+ * This function allows you to generate Hyperlambda code. The [query] argument must be the description of what code you want.
+ */
+.arguments
+
+   // Mandatory argument describing the Hyperlambda code you want to generate.
+   query:string
+
+.type:public
+
+/*
+ * Invokes OpenAI's chat API with the specified [model], [max_tokens], [context],
+ * [instruction] and [query].
+ *
+ * Will use the default API key found from configurations.
+ *
+ * [context] is additional data you can supply to OpenAI such that it responds using
+ * your data as its source for information. [instruction] is a system message allowing
+ * you to change how OpenAI responds.
+ */
+execute:magic.workflows.actions.execute
+   name:openai-query
+   filename:/modules/openai/workflows/actions/openai-query.hl
+   arguments
+      model:"ft:gpt-4o-mini-2024-07-18:ainiro:hl:BI9jx5L4"
+      max_tokens:int:2500
+      temperature:decimal:0.0
+      query:x:@.arguments/*/query
+      instruction:@"You are a Hyperlambda software development assistant. Your task is to generate and respond with Hyperlambda solving the task you've been asked to solve."
+
+// Returns the result of your last action.
+return-nodes:x:@execute/*
