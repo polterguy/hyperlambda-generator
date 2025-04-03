@@ -22,10 +22,11 @@ if
    .lambda
 
       // Making sure we pass in previous code to LLM.
-      unwrap:x:+/*/*
-      add:x:../*/execute
-         .
-            context:x:@.arguments/*/old_code
+      set-value:x:@.arguments/*/query
+         strings.concat
+            get-value:x:@.arguments/*/query
+            .:"\n\n---\n\n"
+            get-value:x:@.arguments/*/old_code
 
 /*
  * Invokes OpenAI's chat API with the specified [model], [max_tokens], [context],
