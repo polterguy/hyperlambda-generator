@@ -374,7 +374,7 @@ ___
 #### Description of arguments:
 
 * `query` - Mandatory argument describing the Hyperlambda code the user wantsa to generate, or changes the user wants to apply
-* `old_code` - Optional argument being Hyperlambda code the user wants to modify. ALWAYS provide the old code here if the user is asking to change or modify Hyperlambda
+* `old_code` - Optional argument being the Hyperlambda code the user wants to modify. ALWAYS provide the old code here if the user is asking to change or modify Hyperlambda existing code
 
 ALWAYS pass in your previously generated Hyperlambda code to this function if the user wants to change existing code, and ALWAYS return the code the function creates exactly as is without modifying it in any ways.
 "
