@@ -1,35 +1,30 @@
 
 /*
- * Generate Hyperlambda code
+ * Gen-AI endpoint generating Hyperlambda code from prompts
  * 
- * This function allows you to generate Hyperlambda code. The [query] argument must be the description of what code you want.
+ * Executes synchronously and returns the response
  */
 .arguments
+   prompt:string
+   type:string
+   user_id:string
+   data:string
 
-   // Mandatory argument describing the Hyperlambda code you want to generate.
-   query:string
-
-   // Optional argument being code you want the AI function to change.
-   old_code:string
-
-.type:public
-
-// Checking if we've got previously generated code
+// Checking if we've got [data] argument, at which point we'll change the prompt
 if
    and
-      exists:x:@.arguments/*/old_code
-      not-null:x:@.arguments/*/old_code
+      exists:x:@.arguments/*/data
+      not-null:x:@.arguments/*/data
    .lambda
 
-      // Making sure we pass in previous code to LLM.
-      set-value:x:@.arguments/*/query
+      // Modifying our prompt.
+      set-value:x:@.arguments/*/prompt
          strings.concat
-            get-value:x:@.arguments/*/query
+            get-value:x:@.arguments/*/prompt
             .:"\r\n\r\n"
             .:"```hyperlambda\r\n"
-            strings.trim:x:@.arguments/*/old_code
+            get-value:x:@.arguments/*/data
             .:"\r\n```"
-log.info:x:@.arguments/*/query
 
 /*
  * Invokes OpenAI's chat API with the specified [model], [max_tokens], [context],
@@ -48,10 +43,13 @@ execute:magic.workflows.actions.execute
       model:"ft:gpt-4o-mini-2024-07-18:ainiro:hl:BIGDZjFz"
       max_tokens:int:2500
       temperature:decimal:0.0
-      query:x:@.arguments/*/query
+      query:x:@.arguments/*/prompt
       instruction:@"You are a Hyperlambda software development assistant. Your task is to generate and respond with Hyperlambda solving the task you've been asked to solve."
 
 // Returns the result of your last action.
-log.info:x:@execute/*/answer
+lambda2hyper:x:../*
+log.info:x:-
 yield
-   new_code:x:@execute/*/answer
+   result:x:@execute/*/answer
+   finish_reason:stop
+
