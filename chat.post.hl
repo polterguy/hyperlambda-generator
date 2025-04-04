@@ -10,46 +10,13 @@
    user_id:string
    data:string
 
-// Checking if we've got [data] argument, at which point we'll change the prompt
-if
-   and
-      exists:x:@.arguments/*/data
-      not-null:x:@.arguments/*/data
-   .lambda
-
-      // Modifying our prompt.
-      set-value:x:@.arguments/*/prompt
-         strings.concat
-            get-value:x:@.arguments/*/prompt
-            .:"\r\n\r\n"
-            .:"```hyperlambda\r\n"
-            get-value:x:@.arguments/*/data
-            .:"\r\n```"
-
-/*
- * Invokes OpenAI's chat API with the specified [model], [max_tokens], [context],
- * [instruction] and [query].
- *
- * Will use the default API key found from configurations.
- *
- * [context] is additional data you can supply to OpenAI such that it responds using
- * your data as its source for information. [instruction] is a system message allowing
- * you to change how OpenAI responds.
- */
-execute:magic.workflows.actions.execute
-   name:openai-query
-   filename:/modules/openai/workflows/actions/openai-query.hl
-   arguments
-      model:"ft:gpt-4o-mini-2024-07-18:ainiro:hl:BIGDZjFz"
-      max_tokens:int:2500
-      temperature:decimal:0.0
-      query:x:@.arguments/*/prompt
-      instruction:@"You are a Hyperlambda software development assistant. Your task is to generate and respond with Hyperlambda solving the task you've been asked to solve."
+// Forwarding heavy lifting to workflow file.
+execute-file:"/modules/hyperlambda-generator/workflows/generate-hyperlambda.hl"
+   query:x:@.arguments/*/prompt
+   old_code:x:@.arguments/*/data
 
 // Returns the result of your last action.
-lambda2hyper:x:../*
-log.info:x:-
 yield
-   result:x:@execute/*/answer
+   result:x:@execute-file/*/new_code
    finish_reason:stop
 
