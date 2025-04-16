@@ -46,7 +46,7 @@ try
       name:openai-query
       filename:/modules/openai/workflows/actions/openai-query.hl
       arguments
-         model:"ft:gpt-4o-mini-2024-07-18:ainiro:hl:BM8rGxSS"
+         model:"ft:gpt-4o-mini-2024-07-18:ainiro:hl:BMj2Byb6"
          max_tokens:int:2500
          temperature:decimal:0.0
          query:x:@.arguments/*/query
