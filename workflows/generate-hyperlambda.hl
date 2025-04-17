@@ -24,13 +24,10 @@ try
       .lambda
 
          // Making sure we pass in previous code to LLM.
-         set-value:x:@.arguments/*/query
-            strings.concat
-               get-value:x:@.arguments/*/query
-               .:"\r\n\r\n"
-               .:"```hyperlambda\r\n"
-               strings.trim:x:@.arguments/*/old_code
-               .:"\r\n```"
+         unwrap:x:+/*/*
+         add:x:@try/*/execute/[0,1]/*/arguments
+            .
+               context:x:@.arguments/*/old_code
 
    /*
     * Invokes OpenAI's chat API with the specified [model], [max_tokens], [context],
@@ -46,11 +43,11 @@ try
       name:openai-query
       filename:/modules/openai/workflows/actions/openai-query.hl
       arguments
-         model:"ft:gpt-4o-mini-2024-07-18:ainiro:hl:BMj2Byb6"
+         model:"ft:gpt-4o-mini-2024-07-18:ainiro:hl:BNI6HwTY"
          max_tokens:int:2500
          temperature:decimal:0.0
          query:x:@.arguments/*/query
-         instruction:@"You are a Hyperlambda software development assistant. Your task is to generate and respond with Hyperlambda solving the task you've been asked to solve."
+         instruction:@"You are a Hyperlambda software development assistant. Your task is to generate and modify Hyperlambda solving the user's problem."
 
    // Storing prompt/completion into our database.
    data.connect:hyperlambda-generator
