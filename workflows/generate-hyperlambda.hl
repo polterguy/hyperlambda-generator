@@ -28,6 +28,7 @@ try
          add:x:@try/*/execute/[0,1]/*/arguments
             .
                context:x:@.arguments/*/old_code
+               context2:Modify this Hyperlambda code according to my instructions
    
 
    /*
@@ -48,7 +49,10 @@ try
          max_tokens:int:2500
          temperature:decimal:0.0
          query:x:@.arguments/*/query
-         instruction:@"You are a Hyperlambda software development assistant. Your task is to generate and modify Hyperlambda solving the user's problem."
+         instruction:@"You are a Hyperlambda software development assistant.
+Your task is to generate and modify existing Hyperlambda solving the user's problem.
+If the user supplies you with existing Hyperlambda code in a previous message, you need to respond with
+the complete Hyperlambda that solves the user's request by modifying the existing Hyperlambda."
 
    // Storing prompt/completion into our database.
    data.connect:hyperlambda-generator
