@@ -29,6 +29,9 @@ try
             .
                context:x:@.arguments/*/old_code
                context2:Modify this Hyperlambda code according to my instructions
+               
+   // Loading system instruction.
+   io.file.load:/modules/hyperlambda-generator/workflows/generate-hyperlambda.hl
    
 
    /*
@@ -45,14 +48,11 @@ try
       name:openai-query
       filename:/modules/openai/workflows/actions/openai-query.hl
       arguments
-         model:"ft:gpt-4.1-mini-2025-04-14:ainiro:hl:BNwg6Hym"
+         model:"ft:gpt-4.1-mini-2025-04-14:ainiro:hl:BO3nT3wH"
          max_tokens:int:2500
          temperature:decimal:0.0
          query:x:@.arguments/*/query
-         instruction:@"You are a Hyperlambda software development assistant.
-Your task is to generate and modify existing Hyperlambda solving the user's problem.
-If the user supplies you with existing Hyperlambda code in a previous message, you need to respond with
-the complete Hyperlambda that solves the user's request by modifying the existing Hyperlambda."
+         instruction:x:@io.file.load
 
    // Storing prompt/completion into our database.
    data.connect:hyperlambda-generator
