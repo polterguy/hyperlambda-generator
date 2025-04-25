@@ -6,14 +6,20 @@
  */
 .arguments
    prompt:string
-   type:string
-   user_id:string
    data:string
 
 // Forwarding heavy lifting to workflow file.
+if
+   and
+      exists:x:@.arguments/*/data
+      not-null:x:@.arguments/*/data
+   .lambda
+      unwrap:x:+/*/*
+      add:x:../*/execute-file
+         .
+            old_code:x:@.arguments/*/data
 execute-file:"/modules/hyperlambda-generator/workflows/generate-hyperlambda.hl"
    query:x:@.arguments/*/prompt
-   old_code:x:@.arguments/*/data
 
 // Returns the result of your last action.
 yield
