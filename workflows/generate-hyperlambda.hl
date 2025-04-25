@@ -48,7 +48,7 @@ try
       name:openai-query
       filename:/modules/openai/workflows/actions/openai-query.hl
       arguments
-         model:"ft:gpt-4.1-mini-2025-04-14:ainiro:hl:BQ8qBrfE"
+         model:"ft:gpt-4.1-mini-2025-04-14:ainiro:hl:BQDqRgnT"
          max_tokens:int:2500
          temperature:decimal:0.0
          query:x:@.arguments/*/query
@@ -62,11 +62,37 @@ try
             prompt:x:@.arguments/*/query
             completion:x:@execute/*/answer
 
+   /*
+    * Checking if LLM didn't return a comment, and we've got no previous code, at which point we
+    * make sure the prompt becomes the comment.
+    */
+   .new_code
+   hyper2lambda:x:@execute/*/answer
+   if
+      and
+         neq
+            get-name:x:@hyper2lambda/0
+            .:..
+         or
+            not-exists:x:@.arguments/*/old_code
+            null:x:@.arguments/*/old_code
+      .lambda
+         unwrap:x:+/*/*
+         insert-before:x:@hyper2lambda/0
+            .
+               ..:x:@.arguments/*/query
+   set-value:x:@.new_code
+      lambda2hyper:x:@hyper2lambda/*
+         comments:true
+
    // Returns the result of your last action.
    yield
-      new_code:x:@execute/*/answer
+      new_code:x:@.new_code
 
 .catch
    lambda2hyper:x:../*
    log.error:x:@.arguments/*/message
       stack:x:@lambda2hyper
+   throw:x:@.arguments/*/message
+      status:int:400
+      public:bool:true
