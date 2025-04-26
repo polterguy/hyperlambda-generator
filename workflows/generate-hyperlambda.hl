@@ -32,7 +32,6 @@ try
                
    // Loading system instruction.
    io.file.load:/modules/hyperlambda-generator/system-instruction.md
-   
 
    /*
     * Invokes OpenAI's chat API with the specified [model], [max_tokens], [context],
@@ -63,24 +62,57 @@ try
             completion:x:@execute/*/answer
 
    /*
-    * Checking if LLM didn't return a comment, and we've got no previous code, at which point we
-    * make sure the prompt becomes the comment.
+    * Buffer for code returned by LLM.
     */
    .new_code
    hyper2lambda:x:@execute/*/answer
+      comments:true
+
+   /*
+    * Verifying that LLM did NOT return comment, since if it did, we use it as is.
+    */
    if
-      and
-         neq
-            get-name:x:@hyper2lambda/0
-            .:..
-         or
-            not-exists:x:@.arguments/*/old_code
-            null:x:@.arguments/*/old_code
+      neq
+         get-name:x:@hyper2lambda/0
+         .:..
       .lambda
-         unwrap:x:+/*/*
-         insert-before:x:@hyper2lambda/0
-            .
-               ..:x:@.arguments/*/query
+
+         /*
+          * Checking if user provided old code.
+          */
+         if
+            and
+               exists:x:@.arguments/*/old_code
+               neq:x:@.arguments/*/old_code
+                  .:
+            .lambda
+
+               /*
+                * Checking if old code contained a file level comment, at which point we use it.
+                */
+               hyper2lambda:x:@.arguments/*/old_code
+                  comments:true
+               if
+                  eq
+                     get-name:x:@hyper2lambda/0
+                     .:..
+                  .lambda
+
+                     // Using old file level comment as comment for newly generated code.
+                     unwrap:x:+/*/*
+                     insert-before:x:@hyper2lambda/0
+                        .
+                           ..:x:@hyper2lambda/0
+         else
+
+            /*
+             * Using prompt as file level comment.
+             */
+            unwrap:x:+/*/*
+            insert-before:x:@hyper2lambda/0
+               .
+                  ..:x:@.arguments/*/query
+
    set-value:x:@.new_code
       lambda2hyper:x:@hyper2lambda/*
          comments:true
