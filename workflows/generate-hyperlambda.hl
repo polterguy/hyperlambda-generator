@@ -12,6 +12,9 @@
    // Optional argument being code you want the AI function to change.
    old_code:string
 
+   // Optional argument being override for system message.
+   system_message_override:string
+
 .type:public
 
 try
@@ -31,7 +34,17 @@ try
                context2:Modify this Hyperlambda code according to my instructions
                
    // Loading system instruction.
-   io.file.load:/modules/hyperlambda-generator/system-instruction.md
+   .instruction
+   if
+      and
+         exists:x:@.arguments/*/system_message_override
+         not-null:x:@.arguments/*/system_message_override
+      .lambda
+         set-value:x:@.instruction
+            get-value:x:@.arguments/*/system_message_override
+   else
+      set-value:x:@.instruction
+         io.file.load:/modules/hyperlambda-generator/system-instruction.md
 
    /*
     * Invokes OpenAI's chat API with the specified [model], [max_tokens], [context],
@@ -51,7 +64,7 @@ try
          max_tokens:int:2500
          temperature:decimal:0.0
          query:x:@.arguments/*/query
-         instruction:x:@io.file.load
+         instruction:x:@.instruction
 
    // Storing prompt/completion into our database.
    data.connect:hyperlambda-generator
