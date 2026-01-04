@@ -60,7 +60,7 @@ try
       name:openai-query
       filename:/modules/openai/workflows/actions/openai-query.hl
       arguments
-         model:"ft:gpt-4.1-mini-2025-04-14:ainiro:hl:CtuKem6d"
+         model:"ft:gpt-4.1-mini-2025-04-14:ainiro:hl:CuF0vVHv"
          max_tokens:int:2500
          temperature:decimal:0.0
          query:x:@.arguments/*/query
