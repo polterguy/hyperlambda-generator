@@ -15,8 +15,6 @@
    // Optional argument being override for system message.
    system_message_override:string
 
-.type:public
-
 try
 
    // Checking if we've got previously generated code
@@ -74,65 +72,9 @@ try
             prompt:x:@.arguments/*/query
             completion:x:@execute/*/answer
 
-   /*
-    * Buffer for code returned by LLM.
-    */
-   .new_code
-   hyper2lambda:x:@execute/*/answer
-      comments:true
-
-   /*
-    * Verifying that LLM did NOT return comment, since if it did, we use it as is.
-    */
-   if
-      neq
-         get-name:x:@hyper2lambda/0
-         .:..
-      .lambda
-
-         /*
-          * Checking if user provided old code.
-          */
-         if
-            and
-               exists:x:@.arguments/*/old_code
-               neq:x:@.arguments/*/old_code
-                  .:
-            .lambda
-
-               /*
-                * Checking if old code contained a file level comment, at which point we use it.
-                */
-               hyper2lambda:x:@.arguments/*/old_code
-                  comments:true
-               if
-                  eq
-                     get-name:x:@hyper2lambda/0
-                     .:..
-                  .lambda
-
-                     // Using old file level comment as comment for newly generated code.
-                     unwrap:x:+/*/*
-                     insert-before:x:@hyper2lambda/0
-                        .
-                           ..:x:@hyper2lambda/0
-         else
-
-            /*
-             * Using prompt as file level comment.
-             */
-            unwrap:x:+/*/*
-            insert-before:x:@hyper2lambda/0
-               .
-                  ..:x:@.arguments/*/query
-
-   set-value:x:@.new_code
-      lambda2hyper:x:@hyper2lambda/*
-         comments:true
-
    // Returns the result of your last action.
    yield
-      new_code:x:@.new_code
+      new_code:x:@execute/*/answer
 
 .catch
    lambda2hyper:x:../*
