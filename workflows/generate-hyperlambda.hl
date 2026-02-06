@@ -17,19 +17,30 @@
 
 try
 
-   // Checking if we've got previously generated code
+   // Sanity checking invocation.
+   validators.mandatory:x:@.arguments/*/query
+
+   // Retrieving OpenAI API token from configuration settings.
+   .token
+   set-value:x:@.token
+      strings.concat
+         .:"Bearer "
+         config.get:"magic:openai:key"
+
+   // Checking if caller provided [old_code] that needs to be modified.
    if
       and
          exists:x:@.arguments/*/old_code
          not-null:x:@.arguments/*/old_code
       .lambda
 
-         // Making sure we pass in previous code to LLM.
-         unwrap:x:+/*/*
-         add:x:@try/*/execute/[0,1]/*/arguments
+         // Adding [context].
+         unwrap:x:+/*/*/*
+         insert-after:x:../*/http.post/*/payload/*/messages/0
             .
-               context:x:@.arguments/*/old_code
-               context2:Modify this Hyperlambda code according to my instructions
+               .
+                  role:user
+                  content:x:@.arguments/*/old_code
                
    // Loading system instruction.
    .instruction
@@ -44,25 +55,44 @@ try
       set-value:x:@.instruction
          io.file.load:/modules/hyperlambda-generator/system-instruction.md
 
-   /*
-    * Invokes OpenAI's chat API with the specified [model], [max_tokens], [context],
-    * [instruction] and [query].
-    *
-    * Will use the default API key found from configurations.
-    *
-    * [context] is additional data you can supply to OpenAI such that it responds using
-    * your data as its source for information. [instruction] is a system message allowing
-    * you to change how OpenAI responds.
-    */
-   execute:magic.workflows.actions.execute
-      name:openai-query
-      filename:/modules/openai/workflows/actions/openai-query.hl
-      arguments
+   // Invokes OpenAI.
+   http.post:"https://api.openai.com/v1/chat/completions"
+      convert:bool:true
+      headers
+         Authorization:x:@.token
+         Content-Type:application/json
+      payload
          model:"ft:gpt-4.1-mini-2025-04-14:ainiro:hl:D5yJU6Sh"
          max_tokens:int:2500
          temperature:decimal:0.0
-         query:x:@.arguments/*/query
-         instruction:x:@.instruction
+         messages
+            .
+               role:assistant
+               content:x:@.instruction
+            .
+               role:user
+               content:x:@.arguments/*/query
+
+   // Sanity checking above invocation.
+   if
+      not
+         and
+            mte:x:@http.post
+               .:int:200
+            lt:x:@http.post
+               .:int:300
+      .lambda
+
+         // Oops, error - Logging error and returning status 500 to caller.
+         lambda2hyper:x:@http.post
+         log.error:Something went wrong while invoking OpenAI
+            message:x:@http.post/*/content/*/error/*/message
+            status:x:@http.post
+            error:x:@lambda2hyper
+         throw:Something went wrong while invoking OpenAI
+            message:x:@http.post/*/content/*/error/*/message
+            status:x:@http.post
+            error:x:@lambda2hyper
 
    // Storing prompt/completion into our database.
    data.connect:hyperlambda-generator
@@ -70,13 +100,15 @@ try
          table:requests
          values
             prompt:x:@.arguments/*/query
-            completion:x:@execute/*/answer
+            completion:x:@http.post/*/content/*/choices/0/*/message/*/content
 
    // Returns the result of your last action.
    yield
-      new_code:x:@execute/*/answer
+      new_code:x:@http.post/*/content/*/choices/0/*/message/*/content
 
 .catch
+
+   // Oops ...!!
    lambda2hyper:x:../*
    log.error:x:@.arguments/*/message
       stack:x:@lambda2hyper
