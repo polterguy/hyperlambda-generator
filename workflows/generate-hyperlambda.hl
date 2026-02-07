@@ -62,7 +62,7 @@ try
          Authorization:x:@.token
          Content-Type:application/json
       payload
-         model:"ft:gpt-4.1-mini-2025-04-14:ainiro:hl:D5yJU6Sh"
+         model:"ft:gpt-4.1-mini-2025-04-14:ainiro:hl:D6ZnlkG7"
          max_tokens:int:2500
          temperature:decimal:0.0
          messages
