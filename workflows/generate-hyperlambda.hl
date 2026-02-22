@@ -95,6 +95,23 @@ try
             status:x:@http.post
             error:x:@lambda2hyper
 
+   // Verifying that OpenAI returned something.
+   if
+      or
+         not-exists:x:@http.post/*/content/*/choices/0/*/message/*/content
+         null:x:@http.post/*/content/*/choices/0/*/message/*/content
+         eq:x:@http.post/*/content/*/choices/0/*/message/*/content
+            .:
+      .lambda
+
+         // Oops ...!!
+         log.error:OpenAI returned null response
+            prompt:x:@.arguments/*/query
+            old_code:x:@.arguments/*/old_code
+         throw:OpenAI returned null response
+            status:int:502
+            public:bool:true
+
    // Storing prompt/completion into our database.
    data.connect:hyperlambda-generator
       data.create
