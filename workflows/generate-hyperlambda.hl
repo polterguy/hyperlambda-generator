@@ -58,7 +58,7 @@ try
    // Invokes OpenAI.
    http.post:"https://api.openai.com/v1/chat/completions"
       convert:bool:true
-      timeout:int:60
+      timeout:int:120
       headers
          Authorization:x:@.token
          Content-Type:application/json
