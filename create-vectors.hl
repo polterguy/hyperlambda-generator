@@ -1,6 +1,16 @@
+/*
+ * Establishes a connection to a data source labeled 'magic' and retrieves records from 'ml_training_snippets'
+ *
+ * Filters results to include only entries of type 'default' that contain valid embeddings and excludes empty or missing values
+ *
+ * Iterates through each record to construct a filename based on existing metadata, then saves the associated embeddings as binary files
+ *
+ * Counts the total number of processed records and returns this count as the final result
+ */
 data.connect:magic
    data.read
       table:ml_training_snippets
+      limit:-1
       columns
          embeddings
          filename
@@ -12,6 +22,9 @@ data.connect:magic
    for-each:x:-/*
       strings.concat
          get-value:x:@.dp/#/*/filename
-         .:.embeddings.txt
-      io.file.save:x:-
+         .:.embeddings.vec_obj
+      io.file.save.binary:x:-
          get-value:x:@.dp/#/*/embeddings
+   get-count:x:@data.read/*
+   yield
+      count:x:@get-count
