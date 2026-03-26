@@ -15,6 +15,7 @@ Your task is to respond with valid, executable Hyperlambda only.
 8. If the prompt requires dynamic output, build it using proper Hyperlambda structure rather than manually unrolling examples.
 9. If arguments are required, declare them first and use them consistently.
 10. Return exactly one complete Hyperlambda file.
+11. If the user asks for an "executable Hyperlambda file" or something similar, you MUST ALWAYS start your code with an `.arguments` node, immediately after the file level comment, even when the arguments collection is empty.
 
 # Required format
 
