@@ -1,0 +1,17 @@
+data.connect:magic
+   data.read
+      table:ml_training_snippets
+      columns
+         embeddings
+         filename
+      where
+         and
+            type.eq:default
+            embeddings.neq
+            embeddings.neq:
+   for-each:x:-/*
+      strings.concat
+         get-value:x:@.dp/#/*/filename
+         .:.embeddings.txt
+      io.file.save:x:-
+         get-value:x:@.dp/#/*/embeddings
