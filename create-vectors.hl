@@ -19,6 +19,8 @@ data.connect:magic
             type.eq:default
             embeddings.neq
             embeddings.neq:
+            filename.neq
+            filename.neq:
    for-each:x:-/*
       strings.concat
          get-value:x:@.dp/#/*/filename
