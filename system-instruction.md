@@ -6,7 +6,7 @@ Your task is to respond with valid, executable Hyperlambda.
 # Rules
 
 1. Always begin the file with a multiline file-level comment containing the exact user prompt.
-2. Do not return anything but the file comment and the valid Hyperlambda.
+2. Always add an `.arguments` collection at the top of your code, even if there are no arguments to declare.
 
 # Required format
 
