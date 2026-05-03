@@ -1,0 +1,140 @@
+
+/*
+ * Generate Hyperlambda code
+ * 
+ * This function allows you to generate Hyperlambda code. The [query] argument must be the description of what code you want.
+ */
+.arguments
+
+   // Mandatory argument describing the Hyperlambda code you want to generate.
+   query:string
+
+   // Optional argument being code you want the AI function to change.
+   old_code:string
+
+   // Optional argument being override for system message.
+   system_message_override:string
+
+try
+
+   // Sanity checking invocation.
+   validators.mandatory:x:@.arguments/*/query
+
+   // Retrieving OpenAI API token from configuration settings.
+   .token
+   set-value:x:@.token
+      strings.concat
+         .:"Bearer "
+         config.get:"magic:together_ai:token"
+
+   // Checking if caller provided [old_code] that needs to be modified.
+   if
+      and
+         exists:x:@.arguments/*/old_code
+         not-null:x:@.arguments/*/old_code
+      .lambda
+
+         // Adding [context].
+         unwrap:x:+/*/*/*
+         insert-after:x:../*/http.post/*/payload/*/messages/0
+            .
+               .
+                  role:user
+                  content:x:@.arguments/*/old_code
+               
+   // Loading system instruction.
+   .instruction
+   if
+      and
+         exists:x:@.arguments/*/system_message_override
+         not-null:x:@.arguments/*/system_message_override
+      .lambda
+         set-value:x:@.instruction
+            get-value:x:@.arguments/*/system_message_override
+   else
+      set-value:x:@.instruction
+         strings.concat
+            io.file.load:/modules/hyperlambda-generator/system-instruction.md
+            .:"\n\n"
+            .:Do not use thinking tags. Output only raw code.
+
+   // Invokes OpenAI.
+   http.post:"https://api.together.xyz/v1/chat/completions"
+      convert:bool:true
+      timeout:int:45
+      headers
+         Authorization:x:@.token
+         Content-Type:application/json
+      payload
+         model:"polterguy/gemma-4-26B-A4B-it-hl-9d25dc29-2eb58940"
+         max_tokens:int:2500
+         temperature:decimal:1.0
+         top_p:decimal:0.95
+         top_k:int:64
+         messages
+            .
+               role:system
+               content:x:@.instruction
+            .
+               role:user
+               content:x:@.arguments/*/query
+
+   // Sanity checking above invocation.
+   if
+      not
+         and
+            mte:x:@http.post
+               .:int:200
+            lt:x:@http.post
+               .:int:300
+      .lambda
+
+         // Oops, error - Logging error and returning status 500 to caller.
+         lambda2hyper:x:@http.post
+         log.error:Something went wrong while invoking OpenAI
+            message:x:@http.post/*/content/*/error/*/message
+            status:x:@http.post
+            error:x:@lambda2hyper
+         throw:Something went wrong while invoking OpenAI
+            message:x:@http.post/*/content/*/error/*/message
+            status:x:@http.post
+            error:x:@lambda2hyper
+
+   // Verifying that OpenAI returned something.
+   if
+      or
+         not-exists:x:@http.post/*/content/*/choices/0/*/message/*/content
+         null:x:@http.post/*/content/*/choices/0/*/message/*/content
+         eq:x:@http.post/*/content/*/choices/0/*/message/*/content
+            .:
+      .lambda
+
+         // Oops ...!!
+         log.error:OpenAI returned null response
+            prompt:x:@.arguments/*/query
+            old_code:x:@.arguments/*/old_code
+         throw:OpenAI returned null response
+            status:int:502
+            public:bool:true
+
+   // Storing prompt/completion into our database.
+   data.connect:hyperlambda-generator
+      data.create
+         table:requests
+         values
+            prompt:x:@.arguments/*/query
+            completion:x:@http.post/*/content/*/choices/0/*/message/*/content
+
+   // Returns the result of your last action.
+   yield
+      new_code:x:@http.post/*/content/*/choices/0/*/message/*/content
+
+.catch
+
+   // Oops ...!!
+   lambda2hyper:x:../*
+   log.error:x:@.arguments/*/message
+      stack:x:@lambda2hyper
+   throw:x:@.arguments/*/message
+      status:int:400
+      public:bool:true
