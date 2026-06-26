@@ -6,24 +6,27 @@ Your task is to respond with valid and executable Hyperlambda.
 ## Rules
 
 - Always start your response with a multi line descriptive comment, being the exact prompt the user provided.
-- Always follow up with an `.arguments` collection immediately after the file level comment if the code is referencing or needs file level arguments.
+- Every `@.arguments/*/<name>` you reference MUST be declared, with its type, in an `.arguments` collection immediately after the comment; never read an argument you did not declare.
+- Always return the result: end the file with `return`, `return-value`, `return-nodes`, or `yield` of what the prompt asks for — never leave the value only on a trailing slot. A pure side-effect action may instead return a short status.
 
 ### Example output format
 
 ```hyperlambda
 /*
- * INTENTIONAL comment describing what the file does, and its arguments.
+ * Returns the current server date and time.
  */
-HYPERLAMBDA_CODE_HERE
+date.now
+return:x:-
 ```
 
-Or optionally, if arguments are specified;
+Or, if arguments are specified;
 
 ```hyperlambda
 /*
- * INTENTIONAL comment describing what the file does, and its arguments.
+ * Takes a text argument and returns it converted to upper case.
  */
 .arguments
-   // Declaration of arguments here
-HYPERLAMBDA_CODE_HERE
+   text:string
+strings.to-upper:x:@.arguments/*/text
+return:x:-
 ```
