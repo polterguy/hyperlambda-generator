@@ -1,7 +1,7 @@
 
 /*
  * Generate Hyperlambda code
- * 
+ *
  * This function allows you to generate Hyperlambda code. The [query] argument must be the description of what code you want.
  */
 .arguments
@@ -36,12 +36,12 @@ try
 
          // Adding [context].
          unwrap:x:+/*/*/*
-         insert-after:x:../*/http.post/*/payload/*/messages/0
+         insert-after:x:../*/while/*/.lambda/*/http.post/*/payload/*/messages/0
             .
                .
                   role:user
                   content:x:@.arguments/*/old_code
-               
+
    // Loading system instruction.
    .instruction
    if
@@ -55,61 +55,102 @@ try
       set-value:x:@.instruction
          io.file.load:/modules/hyperlambda-generator/system-instruction.md
 
-   // Invokes OpenAI.
-   http.post:"https://api.openai.com/v1/chat/completions"
-      convert:bool:true
-      timeout:int:45
-      headers
-         Authorization:x:@.token
-         Content-Type:application/json
-      payload
-         model:"ft:gpt-4.1-mini-2025-04-14:ainiro:hl:Dz01Y5qD"
-         max_tokens:int:2500
-         temperature:decimal:0.0
-         top_p:decimal:1
-         messages
-            .
-               role:system
-               content:x:@.instruction
-            .
-               role:user
-               content:x:@.arguments/*/query
-
-   // Sanity checking above invocation.
-   if
-      not
-         and
-            mte:x:@http.post
-               .:int:200
-            lt:x:@http.post
-               .:int:300
+   // Generating, verifying the result parses as Hyperlambda, and retrying up to 3 times.
+   .attempt:int:0
+   .ok:bool:false
+   .completion
+   while
+      and
+         eq:x:@.ok
+            .:bool:false
+         lt:x:@.attempt
+            .:int:3
       .lambda
 
-         // Oops, error - Logging error and returning status 500 to caller.
-         lambda2hyper:x:@http.post
-         log.error:Something went wrong while invoking OpenAI
-            message:x:@http.post/*/content/*/error/*/message
-            status:x:@http.post
-            error:x:@lambda2hyper
-         throw:Something went wrong while invoking OpenAI
-            message:x:@http.post/*/content/*/error/*/message
-            status:x:@http.post
-            error:x:@lambda2hyper
+         // First attempt is deterministic, retries explore with a higher temperature.
+         math.increment:x:@.attempt
+         .temperature:decimal:0.0
+         if
+            mt:x:@.attempt
+               .:int:1
+            .lambda
+               set-value:x:@.temperature
+                  .:decimal:0.5
 
-   // Verifying that OpenAI returned something.
+         // Invokes OpenAI.
+         http.post:"https://api.openai.com/v1/chat/completions"
+            convert:bool:true
+            timeout:int:45
+            headers
+               Authorization:x:@.token
+               Content-Type:application/json
+            payload
+               model:"ft:gpt-4.1-mini-2025-04-14:ainiro:hl:Dz01Y5qD"
+               max_tokens:int:4096
+               temperature:x:@.temperature
+               top_p:decimal:1
+               messages
+                  .
+                     role:system
+                     content:x:@.instruction
+                  .
+                     role:user
+                     content:x:@.arguments/*/query
+
+         // Sanity checking above invocation.
+         if
+            not
+               and
+                  mte:x:@http.post
+                     .:int:200
+                  lt:x:@http.post
+                     .:int:300
+            .lambda
+
+               // Oops, error - Logging error and throwing to caller.
+               log.error:Something went wrong while invoking OpenAI
+                  message:x:@http.post/*/content/*/error/*/message
+                  status:x:@http.post
+               throw:Something went wrong while invoking OpenAI
+                  message:x:@http.post/*/content/*/error/*/message
+                  status:x:@http.post
+
+         /*
+          * Removing Markdown code fences if the model added any, trimming, and verifying
+          * the result actually parses as Hyperlambda before accepting it - retrying otherwise.
+          */
+         try
+            strings.replace:x:@http.post/*/content/*/choices/0/*/message/*/content
+               .:"```hyperlambda"
+               .:
+            strings.replace:x:@strings.replace
+               .:"```"
+               .:
+            strings.trim:x:@strings.replace
+            hyper2lambda:x:@strings.trim
+            if
+               not-exists:x:@hyper2lambda/*
+               .lambda
+                  throw:Empty completion
+            set-value:x:@.completion
+               get-value:x:@strings.trim
+            set-value:x:@.ok
+               .:bool:true
+         .catch
+            log.info:Generated Hyperlambda did not parse, retrying
+               attempt:x:@.attempt
+               error:x:@.arguments/*/message
+
+   // Verifying we ended up with code that parses.
    if
-      or
-         not-exists:x:@http.post/*/content/*/choices/0/*/message/*/content
-         null:x:@http.post/*/content/*/choices/0/*/message/*/content
-         eq:x:@http.post/*/content/*/choices/0/*/message/*/content
-            .:
+      eq:x:@.ok
+         .:bool:false
       .lambda
 
          // Oops ...!!
-         log.error:OpenAI returned null response
+         log.error:Model could not produce parseable Hyperlambda
             prompt:x:@.arguments/*/query
-            old_code:x:@.arguments/*/old_code
-         throw:OpenAI returned null response
+         throw:Could not generate valid Hyperlambda
             status:int:502
             public:bool:true
 
@@ -119,18 +160,20 @@ try
          table:requests
          values
             prompt:x:@.arguments/*/query
-            completion:x:@http.post/*/content/*/choices/0/*/message/*/content
+            completion:x:@.completion
 
    // Returns the result of your last action.
    yield
-      new_code:x:@http.post/*/content/*/choices/0/*/message/*/content
+      new_code:x:@.completion
 
 .catch
 
-   // Oops ...!!
-   lambda2hyper:x:../*
+   // Logging and passing the error on to caller, preserving its status code.
    log.error:x:@.arguments/*/message
-      stack:x:@lambda2hyper
+      status:x:@.arguments/*/status
+   get-first-value
+      get-value:x:@.arguments/*/status
+      .:int:500
    throw:x:@.arguments/*/message
-      status:int:400
+      status:x:@get-first-value
       public:bool:true
