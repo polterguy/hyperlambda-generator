@@ -168,6 +168,28 @@ try
             status:int:502
             public:bool:true
 
+   /*
+    * Replacing any comment the model produced with a single top-level file comment holding
+    * the exact prompt: parsing WITH comments so a leading model comment can be dropped, then
+    * inserting the prompt as the file comment before re-serializing.
+    */
+   hyper2lambda:x:@.completion
+      comments:true
+   if
+      eq
+         get-name:x:@hyper2lambda/0
+         .:..
+      .lambda
+         remove-nodes:x:@hyper2lambda/0
+   unwrap:x:+/*/*
+   insert-before:x:@hyper2lambda/0
+      .
+         ..:x:@.arguments/*/query
+   lambda2hyper:x:@hyper2lambda/*
+      comments:true
+   set-value:x:@.completion
+      strings.trim:x:@lambda2hyper
+
    // Storing prompt/completion into our database.
    data.connect:hyperlambda-generator
       data.create
