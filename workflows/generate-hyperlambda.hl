@@ -132,12 +132,26 @@ try
                not-exists:x:@hyper2lambda/*
                .lambda
                   throw:Empty completion
+
+            // Verifying every slot at the root and inside [.lambda] blocks actually exists.
+            hyperlambda.verify-slots:x:@strings.trim
+            if
+               eq:x:@hyperlambda.verify-slots
+                  .:bool:false
+               .lambda
+                  strings.join:x:@hyperlambda.verify-slots/*
+                     .:", "
+                  strings.concat
+                     .:"Generated Hyperlambda references non-existing slots: "
+                     get-value:x:@strings.join
+                  throw:x:@strings.concat
+
             set-value:x:@.completion
                get-value:x:@strings.trim
             set-value:x:@.ok
                .:bool:true
          .catch
-            log.info:Generated Hyperlambda did not parse, retrying
+            log.info:Generated Hyperlambda failed verification, retrying
                attempt:x:@.attempt
                error:x:@.arguments/*/message
 
