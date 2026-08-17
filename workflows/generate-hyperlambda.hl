@@ -169,9 +169,35 @@ try
             public:bool:true
 
    /*
-    * Replacing any comment the model produced with a single top-level file comment holding
-    * the exact prompt: parsing WITH comments so a leading model comment can be dropped, then
-    * inserting the prompt as the file comment before re-serializing.
+    * Figuring out which comment the generated file should carry.
+    *
+    * Normally that is the prompt, since the prompt describes what the file does. On a change
+    * request it is not: there the prompt describes the change ("add paging to this endpoint"),
+    * while the file still does what it always did - so the comment the old code already carried
+    * is kept, and only replaced by the prompt when the old code had no comment to preserve.
+    */
+   .comment
+   set-value:x:@.comment
+      get-value:x:@.arguments/*/query
+   if
+      and
+         exists:x:@.arguments/*/old_code
+         not-null:x:@.arguments/*/old_code
+      .lambda
+         hyper2lambda:x:@.arguments/*/old_code
+            comments:true
+         if
+            eq
+               get-name:x:@hyper2lambda/0
+               .:..
+            .lambda
+               set-value:x:@.comment
+                  get-value:x:@hyper2lambda/0
+
+   /*
+    * Replacing any comment the model produced with a single top-level file comment: parsing WITH
+    * comments so a leading model comment can be dropped, then inserting the comment resolved
+    * above as the file comment before re-serializing.
     */
    hyper2lambda:x:@.completion
       comments:true
@@ -184,7 +210,7 @@ try
    unwrap:x:+/*/*
    insert-before:x:@hyper2lambda/0
       .
-         ..:x:@.arguments/*/query
+         ..:x:@.comment
    lambda2hyper:x:@hyper2lambda/*
       comments:true
    set-value:x:@.completion
