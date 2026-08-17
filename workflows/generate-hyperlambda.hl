@@ -32,12 +32,15 @@ try
       .lambda
 
          // Adding [context].
+         strings.concat
+            .:"Modify the following code according to my instructions in the next message and return the COMPLETE code, including its modifications:\n\n"
+            get-value:x:@.arguments/*/old_code
          unwrap:x:+/*/*/*
-         insert-after:x:../*/while/*/.lambda/*/http.post/*/payload/*/messages/0
+         insert-after:x:../*/try/*/while/*/.lambda/*/http.post/*/payload/*/messages/0
             .
                .
                   role:user
-                  content:x:@.arguments/*/old_code
+                  content:x:@strings.concat
 
    // Loading system instruction.
    .instruction
