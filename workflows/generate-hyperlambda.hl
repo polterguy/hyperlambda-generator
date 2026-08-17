@@ -12,9 +12,6 @@
    // Optional argument being code you want the AI function to change.
    old_code:string
 
-   // Optional argument being override for system message.
-   system_message_override:string
-
 try
 
    // Sanity checking invocation.
@@ -44,16 +41,8 @@ try
 
    // Loading system instruction.
    .instruction
-   if
-      and
-         exists:x:@.arguments/*/system_message_override
-         not-null:x:@.arguments/*/system_message_override
-      .lambda
-         set-value:x:@.instruction
-            get-value:x:@.arguments/*/system_message_override
-   else
-      set-value:x:@.instruction
-         io.file.load:/modules/hyperlambda-generator/system-instruction.md
+   set-value:x:@.instruction
+      io.file.load:/modules/hyperlambda-generator/system-instruction.md
 
    // Generating, verifying the result parses as Hyperlambda, and retrying up to 3 times.
    .attempt:int:0
