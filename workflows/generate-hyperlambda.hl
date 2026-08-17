@@ -1,12 +1,17 @@
 
 /*
- * Generate Hyperlambda code
+ * Generate or change Hyperlambda code
  *
- * This function allows you to generate Hyperlambda code. The [query] argument must be the description of what code you want.
+ * This function allows you to generate Hyperlambda code, or to change existing code by passing it
+ * as [old_code]. On a change the file keeps the comment it already had, since [query] then
+ * describes the change rather than what the file does.
  */
 .arguments
 
-   // Mandatory argument describing the Hyperlambda code you want to generate.
+   /*
+    * Mandatory. For new code, describes the Hyperlambda you want generated. When [old_code] is
+    * supplied, describes only the change to apply to it.
+    */
    query:string
 
    // Optional argument being code you want the AI function to change.

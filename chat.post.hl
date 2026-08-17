@@ -1,8 +1,9 @@
 
 /*
- * Gen-AI endpoint generating Hyperlambda code from prompts
- * 
- * Executes synchronously and returns the response
+ * Gen-AI endpoint generating or changing Hyperlambda code from prompts
+ *
+ * Executes synchronously and returns the response. Supply [data] being existing code to change it
+ * rather than generate something new, at which point [prompt] describes only the change.
  */
 .arguments
    prompt:string
