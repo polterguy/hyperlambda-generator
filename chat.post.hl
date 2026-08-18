@@ -9,6 +9,18 @@
    prompt:string
    data:string
 
+/*
+ * Throttling invocations to 50 per hour per IP address, since this endpoint is public
+ * and consumes the OpenAI API key of whoever installed the backend. The declaration is
+ * idempotent, keeping the existing counter as long as its configuration is unchanged, and
+ * the counter is kept in memory, implying a backend restart resets it.
+ */
+execution.throttle.create:hyperlambda-generator.chat.ip
+   limit:50
+   window:3600
+   per:ip
+execution.throttle:hyperlambda-generator.chat.ip
+
 // Forwarding heavy lifting to workflow file.
 if
    and
